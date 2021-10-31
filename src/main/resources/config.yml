@@ -1,0 +1,16 @@
+locations_settings:
+  playing:
+    locations:
+      - "100, 100, 101, world"
+      - "100, 100, 102, world"
+
+join_location: "100, 100, 100, world"
+lose_location: "101, 50, 108, world"
+winner_location: "100, 100, 104, world"
+
+sql:
+  username: "root"
+  password: "?*8W.mGmWG3uhB3?"
+  port: 3306
+  database: "learning"
+  ip: "localhost"

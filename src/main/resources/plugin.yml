@@ -1,0 +1,8 @@
+name: SumoPlugin
+version: '1.0'
+main: com.gmail.scot.sumoplugin.SumoPlugin
+api-version: 1.17
+
+commands:
+  sumo:
+    description: "Sumo commands"
