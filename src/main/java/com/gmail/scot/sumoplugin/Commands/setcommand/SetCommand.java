@@ -18,12 +18,17 @@ public class SetCommand implements SubCommand {
     public SetCommand(LocationSQL locationSQL, SavedLocManager savedLocManager) {
         this.locationSQL = locationSQL;
         this.savedLocManager = savedLocManager;
-        setupCommandMap(new SetSpawn(locationSQL, savedLocManager), new SetLose(locationSQL, savedLocManager));
+        setupCommandMap(new SetSpawn(locationSQL, savedLocManager), new SetLose(locationSQL, savedLocManager),
+                new SetPosition1(locationSQL, savedLocManager), new SetPosition2(locationSQL, savedLocManager),
+                new SetWinner(locationSQL, savedLocManager));
     }
 
-    private void setupCommandMap(SetSpawn setSpawn, SetLose setLose) {
+    private void setupCommandMap(SetSpawn setSpawn, SetLose setLose, SetPosition1 setPosition1, SetPosition2 setPosition2, SetWinner setWinner) {
         this.commandMap.put("spawn", setSpawn);
         this.commandMap.put("lose", setLose);
+        this.commandMap.put("pos1", setPosition1);
+        this.commandMap.put("pos2", setPosition2);
+        this.commandMap.put("winner", setWinner);
     }
 
     @Override

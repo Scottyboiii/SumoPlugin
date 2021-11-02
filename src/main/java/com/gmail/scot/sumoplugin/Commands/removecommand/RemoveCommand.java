@@ -15,12 +15,14 @@ public class RemoveCommand implements SubCommand {
 
     public RemoveCommand(LocationSQL locationSQL) {
         this.locationSQL = locationSQL;
-        setupCommandMap(new RemoveSpawnCommand(locationSQL), new RemoveLoseCommand(locationSQL));
+        setupCommandMap(new RemoveSpawnCommand(locationSQL), new RemoveLoseCommand(locationSQL),
+                new RemoveWinner(locationSQL));
     }
 
-    private void setupCommandMap(RemoveSpawnCommand removeSpawnCommand, RemoveLoseCommand removeLoseCommand) {
+    private void setupCommandMap(RemoveSpawnCommand removeSpawnCommand, RemoveLoseCommand removeLoseCommand, RemoveWinner removeWinner) {
         this.commandMap.put("spawn", removeSpawnCommand);
         this.commandMap.put("lose", removeLoseCommand);
+        this.commandMap.put("winner", removeWinner);
     }
 
     @Override

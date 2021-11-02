@@ -17,7 +17,6 @@ public class StartCommand implements SubCommand {
     public void run(CommandSender sender, String[] args) {
 
         Player p = (Player) sender;
-
         this.sumoManager.start(p);
 
     }

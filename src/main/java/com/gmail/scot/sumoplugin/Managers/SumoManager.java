@@ -2,31 +2,44 @@ package com.gmail.scot.sumoplugin.Managers;
 
 import com.gmail.scot.sumoplugin.Enum.LocationType;
 import com.gmail.scot.sumoplugin.Language;
+import com.gmail.scot.sumoplugin.Runnable.CheckIfPlayingRunnable;
 import com.gmail.scot.sumoplugin.Runnable.FindWhoToRemoveRunnable;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
+import com.gmail.scot.sumoplugin.SumoPlugin;
+import com.gmail.scot.sumoplugin.Utils.SelectionManager;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
 public class SumoManager {
 
     private final LocationManager locationManager;
+    private final SelectionManager selectionManager;
+    private final SumoPlugin sumoPlugin;
     private final LocationSQL locationSQL;
     private boolean started = false;
+    private static final Random r = new Random();
     private final SaveSettings saveSettings;
+    private int findWhoToRemoveTaskID = -1;
     private WorldGuardPlugin worldGuard;
     private WorldEditPlugin worldEdit;
     private List<UUID> joinedPlayers = new ArrayList<>();
-    private Set<UUID> playersPlaying = new HashSet<>();
+    private Map<UUID, String> playersPlaying = new HashMap<>();
+    private List<UUID> lostPlayers = new ArrayList<>();
 
-    public SumoManager(LocationManager locationManager, LocationSQL locationSQL, SaveSettings saveSettings) {
+    public SumoManager(LocationManager locationManager, SelectionManager selectionManager, SumoPlugin sumoPlugin, LocationSQL locationSQL, SaveSettings saveSettings) {
         this.locationManager = locationManager;
+        this.selectionManager = selectionManager;
+        this.sumoPlugin = sumoPlugin;
         this.locationSQL = locationSQL;
         this.saveSettings = saveSettings;
     }
@@ -40,14 +53,22 @@ public class SumoManager {
         }
     }
 
-    public void join(Player p) {
+    public void join(Player p, String locationType) {
+        if (!this.started) {
+            p.sendMessage(Language.Message_Sumo_Not_Started);
+            return;
+        }
+        if (this.lostPlayers.contains(p.getUniqueId())) {
+            p.sendMessage(Language.Message_Lost);
+            return;
+        }
         if (this.joinedPlayers.contains(p.getUniqueId())) {
             p.sendMessage(Language.Message_Already_Joined);
             return;
         }
-        if (this.locationSQL.locationExist(LocationType.JOIN.getDatabaseName())) {
-            if (this.locationSQL.getLocations().get(0).getName().equalsIgnoreCase(LocationType.JOIN.getDatabaseName())) {
-                Location location = this.locationSQL.getLocations().get(0).getLocation();
+        if (this.locationSQL.locationExist(locationType)) {
+            if (this.locationSQL.locationExist(locationType)) {
+                Location location = this.locationSQL.locationTeleport(locationType);
                 p.teleport(location);
                 Bukkit.broadcast(Language.Message_Player_Joined.replace("%player%", p.getName()), Language.Permission_Use);
                 this.joinedPlayers.add(p.getUniqueId());
@@ -61,6 +82,7 @@ public class SumoManager {
             p.sendMessage(Language.Message_Player_Not_Playing);
         } else {
             this.joinedPlayers.remove(p.getUniqueId());
+            this.lostPlayers.add(p.getUniqueId());
             p.teleport(this.locationSQL.locationTeleport(LocationType.JOIN.getDatabaseName()));
             p.sendMessage(Language.Message_Lost);
         }
@@ -72,33 +94,107 @@ public class SumoManager {
         TextComponent textComponent = new TextComponent(Language.Message_Click_To_Join);
         textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/sumo join"));
         this.saveSettings.setSaveCommand(true);
-        p.spigot().sendMessage(textComponent);
+        Bukkit.spigot().broadcast(textComponent);
         Bukkit.broadcast("", Language.Permission_Use);
     }
 
-    /*
-    public void fallenOff() {
-        if (this.started) {
-            FindWhoToRemoveRunnable whotoRemove = new FindWhoToRemoveRunnable(() -> {
-                Player p = findWhoToRemove();
-            })
+    public void test(Player p) {
+        int playing = getJoinedPlayers().size();
+        if (playing == 2) {
+            World w = p.getWorld();
+            Location b = (Location) w.getBlockAt(10, 10, 10);
+            p.teleport(b);
         }
     }
 
-    public void findWhoToRemove() {
+    public void startRunnable(int countdownFrom) {
+        new BukkitRunnable() {
+            int countdown = countdownFrom;
 
+            @Override
+            public void run() {
+                if (countdown == 0) {
+                    Bukkit.broadcast("§aSumo-Eventet er nu startet!", Language.Permission_Use);
+                    started = true;
+                    startBattle();
+                    cancel();
+                } else {
+                    if (countdown != 1) {
+                        Bukkit.broadcast("§aSumo-Eventet starter om: §6" + countdown + "§a sekunder", Language.Permission_Use);
+                    } else {
+                        Bukkit.broadcast("§aSumo-Eventet starter om: §6" + countdown + "§a sekund", Language.Permission_Use);
+                    }
+                    countdown--;
+                }
+            }
+        }.runTaskTimer(sumoPlugin, 0, 20);
     }
 
-     */
+    public void startBattle() {
+        UUID uuid1 = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
+        Player p1 = Bukkit.getPlayer(uuid1);
+        getJoinedPlayers().remove(uuid1);
+        getPlayersPlaying().put(uuid1, p1.getName());
 
-    public void disqualified() {
+        UUID uuid2 = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
+        Player p2 = Bukkit.getPlayer(uuid2);
+        getJoinedPlayers().remove(uuid2);
+        getPlayersPlaying().put(uuid2, p2.getName());
+        fallenOffRunnable();
+
+        p1.teleport(this.locationSQL.locationTeleport(LocationType.POS1.getDatabaseName()));
+        p2.teleport(this.locationSQL.locationTeleport(LocationType.POS2.getDatabaseName()));
+        Bukkit.broadcast("§aSpillere: §6" + p1.getName() + "§a, §6" + p2.getName(), Language.Permission_Use);
+    }
+
+    private void addRandomPlayer() {
+        UUID uuid = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
+        Player p = Bukkit.getPlayer(uuid);
+        getJoinedPlayers().remove(uuid);
+        getPlayersPlaying().put(uuid, p.getName());
+    }
+
+    public void fallenOffRunnable() {
         if (this.started) {
             FindWhoToRemoveRunnable whoToRemove = new FindWhoToRemoveRunnable(() -> {
-                Player p;
+                Player p = findWhoToRemove("dead");
+                if (p == null) {
+                    return false;
+                }
+                Bukkit.broadcast(Language.Broadcast_Message_Lost.replace("%player%", p.getName()), Language.Permission_Use);
+                p.teleport(this.locationSQL.locationTeleport(LocationType.LOST.getDatabaseName()));
+                getPlayersPlaying().remove(p.getUniqueId(), p.getName());
+                if (getPlayersPlaying().size() == 1) {
+                    String winner = getPlayersPlaying().entrySet().iterator().next().getValue();
+                    Player pWinner = Bukkit.getPlayer(winner);
+                    pWinner.teleport(this.locationSQL.locationTeleport(LocationType.WINNER.getDatabaseName()));
+                    Bukkit.broadcast(Language.Broadcast_Message_Winner.replace("%player%", pWinner.getName()), Language.Permission_Use);
+                    getPlayersPlaying().clear();
+                }
+                findWhoToRemoveTaskID = -1;
                 return true;
             });
+            BukkitTask bukkitTask = Bukkit.getScheduler().runTaskTimer(this.sumoPlugin, whoToRemove, 0, 10);
+            findWhoToRemoveTaskID = bukkitTask.getTaskId();
+            whoToRemove.setId(bukkitTask.getTaskId());
         }
-
     }
 
+    public Player findWhoToRemove(String regionName) {
+        for (UUID uuid : this.playersPlaying.keySet()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (this.selectionManager.checkPlayerInRegion(p.getLocation(), regionName)) {
+                return Bukkit.getPlayer(uuid);
+            }
+        }
+        return null;
+    }
+
+    public List<UUID> getJoinedPlayers() {
+        return joinedPlayers;
+    }
+
+    public Map<UUID, String> getPlayersPlaying() {
+        return playersPlaying;
+    }
 }

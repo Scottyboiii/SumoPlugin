@@ -16,12 +16,17 @@ public class TeleportCommand implements SubCommand {
 
     public TeleportCommand(LocationSQL locationSQL) {
         this.locationSQL = locationSQL;
-        setupCommandMap(new TeleportSpawn(this.locationSQL), new TeleportLose(locationSQL));
+        setupCommandMap(new TeleportSpawn(this.locationSQL),
+                new TeleportLose(locationSQL), new TeleportPos1(locationSQL),
+                new TeleportPos2(locationSQL), new TeleportWinner(locationSQL));
     }
 
-    private void setupCommandMap(TeleportSpawn teleportSpawn, TeleportLose teleportLose) {
+    private void setupCommandMap(TeleportSpawn teleportSpawn, TeleportLose teleportLose, TeleportPos1 teleportPos1, TeleportPos2 teleportPos2, TeleportWinner teleportWinner) {
         this.commandMap.put("spawn", teleportSpawn);
         this.commandMap.put("lose", teleportLose);
+        this.commandMap.put("pos1", teleportPos1);
+        this.commandMap.put("pos2", teleportPos2);
+        this.commandMap.put("winner", teleportWinner);
     }
 
     @Override

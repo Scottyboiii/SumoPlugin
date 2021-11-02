@@ -3,6 +3,7 @@ package com.gmail.scot.sumoplugin.Utils;
 import com.gmail.scot.sumoplugin.Enum.LocationType;
 import com.gmail.scot.sumoplugin.Language;
 import com.gmail.scot.sumoplugin.Managers.LocationManager;
+import com.gmail.scot.sumoplugin.Managers.SumoManager;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;

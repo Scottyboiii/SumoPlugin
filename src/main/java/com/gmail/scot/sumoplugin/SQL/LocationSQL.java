@@ -70,6 +70,11 @@ public class LocationSQL {
         }
         return false;
     }
+    /*
+    public List<Location> loadLocations() {
+
+    }
+     */
 
     public Location locationTeleport(String specificName) {
         String sqlString = "SELECT name, location FROM savedlocations WHERE NAME = ?;";

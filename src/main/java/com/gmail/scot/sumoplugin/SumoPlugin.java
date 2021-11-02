@@ -23,13 +23,14 @@ public final class SumoPlugin extends JavaPlugin {
         LocationSQL locationSQL = new LocationSQL(new SQLHandler(getConfig()));
         SavedLocManager savedLocManager = new SavedLocManager(locationSQL);
         LocationManager locationManager = new LocationManager();
-        SumoManager sumoManager = new SumoManager(locationManager, locationSQL, saveSettings);
         SelectionManager selectionManager = new SelectionManager(locationManager, locationSQL);
+        SumoManager sumoManager = new SumoManager(locationManager, selectionManager, this, locationSQL, saveSettings);
 
-        SumoListener sumoListener = new SumoListener(selectionManager, locationSQL);
+
+        SumoListener sumoListener = new SumoListener(selectionManager, locationSQL, sumoManager);
         Bukkit.getServer().getPluginManager().registerEvents(sumoListener, this);
 
-        SumoCommand sumoCommand = new SumoCommand(selectionManager, sumoManager, savedLocManager, locationSQL);
+        SumoCommand sumoCommand = new SumoCommand(selectionManager, sumoManager, savedLocManager, locationSQL, this);
         getCommand("sumo").setExecutor(sumoCommand);
 
     }

@@ -8,6 +8,7 @@ import com.gmail.scot.sumoplugin.Interfaces.SubCommand;
 import com.gmail.scot.sumoplugin.Managers.SavedLocManager;
 import com.gmail.scot.sumoplugin.Managers.SumoManager;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
+import com.gmail.scot.sumoplugin.SumoPlugin;
 import com.gmail.scot.sumoplugin.Utils.SelectionManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -22,14 +23,16 @@ public class SumoCommand extends CreateCommand {
     private final SumoManager sumoManager;
     private final SavedLocManager savedLocManager;
     private final LocationSQL locationSQL;
+    private final SumoPlugin sumoPlugin;
     private final Map<String, SubCommand> commandMap = new HashMap<>();
 
-    public SumoCommand(SelectionManager selection, SumoManager sumoManager, SavedLocManager savedLocManager, LocationSQL locationSQL) {
+    public SumoCommand(SelectionManager selection, SumoManager sumoManager, SavedLocManager savedLocManager, LocationSQL locationSQL, SumoPlugin sumoPlugin) {
         this.selection = selection;
         this.sumoManager = sumoManager;
         this.savedLocManager = savedLocManager;
         this.locationSQL = locationSQL;
-        setupCommandMap(new JoinCommand(sumoManager),
+        this.sumoPlugin = sumoPlugin;
+        setupCommandMap(new JoinCommand(sumoManager, this.sumoPlugin),
                 new StartCommand(sumoManager),
                 new KickCommand(sumoManager),
                 new SetCommand(locationSQL, savedLocManager),
