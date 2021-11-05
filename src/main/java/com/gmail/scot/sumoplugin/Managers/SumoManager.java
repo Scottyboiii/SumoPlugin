@@ -2,10 +2,10 @@ package com.gmail.scot.sumoplugin.Managers;
 
 import com.gmail.scot.sumoplugin.Enum.LocationType;
 import com.gmail.scot.sumoplugin.Language;
-import com.gmail.scot.sumoplugin.Runnable.CheckIfPlayingRunnable;
 import com.gmail.scot.sumoplugin.Runnable.FindWhoToRemoveRunnable;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
 import com.gmail.scot.sumoplugin.SumoPlugin;
+import com.gmail.scot.sumoplugin.Utils.Runnable;
 import com.gmail.scot.sumoplugin.Utils.SelectionManager;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -13,7 +13,6 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -32,9 +31,9 @@ public class SumoManager {
     private int findWhoToRemoveTaskID = -1;
     private WorldGuardPlugin worldGuard;
     private WorldEditPlugin worldEdit;
-    private List<UUID> joinedPlayers = new ArrayList<>();
-    private Map<UUID, String> playersPlaying = new HashMap<>();
-    private List<UUID> lostPlayers = new ArrayList<>();
+    private final List<UUID> joinedPlayers = new ArrayList<>();
+    private final Map<UUID, String> playersPlaying = new HashMap<>();
+    private final List<UUID> lostPlayers = new ArrayList<>();
 
     public SumoManager(LocationManager locationManager, SelectionManager selectionManager, SumoPlugin sumoPlugin, LocationSQL locationSQL, SaveSettings saveSettings) {
         this.locationManager = locationManager;
@@ -49,7 +48,7 @@ public class SumoManager {
             p.sendMessage(Language.Message_Sumo_Already_Started);
         } else {
             this.started = true;
-            startBroadCast(p);
+            startBroadCast();
         }
     }
 
@@ -88,7 +87,7 @@ public class SumoManager {
         }
     }
 
-    private void startBroadCast(Player p) {
+    private void startBroadCast() {
         Bukkit.broadcast("", Language.Permission_Use);
         Bukkit.broadcast(Language.Message_Sumo_Is_Now_Started, Language.Permission_Use);
         TextComponent textComponent = new TextComponent(Language.Message_Click_To_Join);
@@ -98,21 +97,13 @@ public class SumoManager {
         Bukkit.broadcast("", Language.Permission_Use);
     }
 
-    public void test(Player p) {
-        int playing = getJoinedPlayers().size();
-        if (playing == 2) {
-            World w = p.getWorld();
-            Location b = (Location) w.getBlockAt(10, 10, 10);
-            p.teleport(b);
-        }
-    }
-
     public void startRunnable(int countdownFrom) {
         new BukkitRunnable() {
             int countdown = countdownFrom;
 
             @Override
             public void run() {
+
                 if (countdown == 0) {
                     Bukkit.broadcast("§aSumo-Eventet er nu startet!", Language.Permission_Use);
                     started = true;
@@ -126,38 +117,41 @@ public class SumoManager {
                     }
                     countdown--;
                 }
+
             }
         }.runTaskTimer(sumoPlugin, 0, 20);
     }
 
     public void startBattle() {
-        UUID uuid1 = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
-        Player p1 = Bukkit.getPlayer(uuid1);
-        getJoinedPlayers().remove(uuid1);
-        getPlayersPlaying().put(uuid1, p1.getName());
-
-        UUID uuid2 = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
-        Player p2 = Bukkit.getPlayer(uuid2);
-        getJoinedPlayers().remove(uuid2);
-        getPlayersPlaying().put(uuid2, p2.getName());
-        fallenOffRunnable();
+        Player p1 = addRandomPlayer();
+        Player p2 = addRandomPlayer();
+        fallenOffRunnable("dead");
 
         p1.teleport(this.locationSQL.locationTeleport(LocationType.POS1.getDatabaseName()));
         p2.teleport(this.locationSQL.locationTeleport(LocationType.POS2.getDatabaseName()));
         Bukkit.broadcast("§aSpillere: §6" + p1.getName() + "§a, §6" + p2.getName(), Language.Permission_Use);
     }
 
-    private void addRandomPlayer() {
+    private Player addRandomPlayer() {
         UUID uuid = joinedPlayers.get(r.nextInt(joinedPlayers.size()));
         Player p = Bukkit.getPlayer(uuid);
         getJoinedPlayers().remove(uuid);
         getPlayersPlaying().put(uuid, p.getName());
+        return p;
     }
 
-    public void fallenOffRunnable() {
+    private void getWinner() {
+        String winner = getPlayersPlaying().entrySet().iterator().next().getValue();
+        Player pWinner = Bukkit.getPlayer(winner);
+        pWinner.teleport(this.locationSQL.locationTeleport(LocationType.WINNER.getDatabaseName()));
+        Bukkit.broadcast(Language.Broadcast_Message_Winner.replace("%player%", pWinner.getName()), Language.Permission_Use);
+        getPlayersPlaying().clear();
+    }
+
+    public void fallenOffRunnable(String regionName) {
         if (this.started) {
             FindWhoToRemoveRunnable whoToRemove = new FindWhoToRemoveRunnable(() -> {
-                Player p = findWhoToRemove("dead");
+                Player p = findWhoToRemove(regionName);
                 if (p == null) {
                     return false;
                 }
@@ -165,11 +159,7 @@ public class SumoManager {
                 p.teleport(this.locationSQL.locationTeleport(LocationType.LOST.getDatabaseName()));
                 getPlayersPlaying().remove(p.getUniqueId(), p.getName());
                 if (getPlayersPlaying().size() == 1) {
-                    String winner = getPlayersPlaying().entrySet().iterator().next().getValue();
-                    Player pWinner = Bukkit.getPlayer(winner);
-                    pWinner.teleport(this.locationSQL.locationTeleport(LocationType.WINNER.getDatabaseName()));
-                    Bukkit.broadcast(Language.Broadcast_Message_Winner.replace("%player%", pWinner.getName()), Language.Permission_Use);
-                    getPlayersPlaying().clear();
+                    getWinner();
                 }
                 findWhoToRemoveTaskID = -1;
                 return true;
@@ -180,7 +170,7 @@ public class SumoManager {
         }
     }
 
-    public Player findWhoToRemove(String regionName) {
+    private Player findWhoToRemove(String regionName) {
         for (UUID uuid : this.playersPlaying.keySet()) {
             Player p = Bukkit.getPlayer(uuid);
             if (this.selectionManager.checkPlayerInRegion(p.getLocation(), regionName)) {

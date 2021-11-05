@@ -54,4 +54,6 @@ public class Language {
 
     public static String Broadcast_Message_Lost = Message_Prefix + "§cSpilleren §6%player% §cfaldte ned og tabte derfor!";
     public static String Broadcast_Message_Winner = Message_Prefix + "§aSpilleren §6%player% §askubbede modstanderen ned og vandt derfor!";
+    public static String Message_Sumo_Starting_Countdown = Message_Prefix + "§aSumo-Eventet starter om: §6";
+    public static String Message_Sumo_Last_Starting_CountDown = Message_Prefix + "§aSumo-Eventet starter om: §6";
 }

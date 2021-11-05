@@ -8,6 +8,7 @@ import com.gmail.scot.sumoplugin.Managers.SavedLocManager;
 import com.gmail.scot.sumoplugin.Managers.SumoManager;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
 import com.gmail.scot.sumoplugin.SQL.SQLHandler;
+import com.gmail.scot.sumoplugin.Utils.Runnable;
 import com.gmail.scot.sumoplugin.Utils.SelectionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
