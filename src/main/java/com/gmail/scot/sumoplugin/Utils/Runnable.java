@@ -17,6 +17,7 @@ public class Runnable {
             public void run() {
                 if (countdown == 0) {
                     Bukkit.broadcast(finalBroadCastMessage, MessagePermission);
+                    cancel();
                 } else {
                     if (countdown != 1) {
                         Bukkit.broadcast(countdownMessage + countdown + "§a sekunder", MessagePermission);

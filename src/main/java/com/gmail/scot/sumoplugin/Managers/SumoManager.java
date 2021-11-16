@@ -5,7 +5,6 @@ import com.gmail.scot.sumoplugin.Language;
 import com.gmail.scot.sumoplugin.Runnable.FindWhoToRemoveRunnable;
 import com.gmail.scot.sumoplugin.SQL.LocationSQL;
 import com.gmail.scot.sumoplugin.SumoPlugin;
-import com.gmail.scot.sumoplugin.Utils.Runnable;
 import com.gmail.scot.sumoplugin.Utils.SelectionManager;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
